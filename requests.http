@@ -1,0 +1,51 @@
+### Weather (Open-Meteo) — no key needed
+GET https://api.open-meteo.com/v1/forecast?latitude=18.090829&longitude=79.465273&current=temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover,surface_pressure,precipitation,shortwave_radiation,soil_temperature_0cm,soil_moisture_0_to_1cm
+
+###
+
+### Soil (OpenLandMap) — original doc's endpoint, confirmed broken (404)
+GET https://api.openlandmap.org/query/soil/taxousda?lon=79.465273&lat=18.090829
+
+###
+
+### Soil (OpenLandMap) — corrected endpoint, old exact filename (400 - file not found)
+GET https://api.openlandmap.org/query/point?lat=18.090829&lon=79.465273&coll=predicted250m&regex=sol_grtgroup_usda.soiltax_c_250m_b0..0cm_1950..2017_v0.1.tif
+
+###
+
+### Soil (OpenLandMap) — broadened regex attempt (test this one)
+GET https://api.openlandmap.org/query/point?lat=18.090829&lon=79.465273&coll=predicted250m&regex=grtgroup
+
+###
+
+### Soil (OpenLandMap) — Swagger docs, check for current valid coll/regex values
+GET https://api.openlandmap.org/docs
+
+###
+
+### Satellite analysis (PhytoLens remote-sensing backend) — confirmed working
+POST https://remotesensing-backend-952153121532.us-central1.run.app/analyze-all
+Content-Type: application/json
+
+{
+  "geojson": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [[
+        [79.465273, 18.090829],
+        [79.465868, 18.090835],
+        [79.465782, 18.090121],
+        [79.465273, 18.090829]
+      ]]
+    },
+    "properties": {}
+  },
+  "startDate": "2026-01-01",
+  "endDate": "2026-07-25"
+}
+
+###
+
+### Remote-sensing backend's own live API spec — source of truth if routes change again
+GET https://remotesensing-backend-952153121532.us-central1.run.app/openapi.json

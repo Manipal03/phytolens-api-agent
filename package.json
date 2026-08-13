@@ -1,0 +1,19 @@
+{
+  "name": "phytolens-api-agent",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node agent.js",
+    "query": "node agent.js",
+    "ingest": "node src/ingestion/pdfLoader.js && node src/ingestion/chunker.js",
+    "index": "node src/vector/indexDocuments.js",
+    "test": "node tests/hybrid-agent-test.js",
+    "demo": "streamlit run app.py"
+  },
+  "dependencies": {
+    "@qdrant/js-client-rest": "^1.19.0",
+    "dotenv": "^16.4.5",
+    "ollama": "^0.5.18",
+    "pdf-parse": "^2.4.5"
+  }
+}

@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Secrets — never commit
+.env
+.env.local
+
+# Generated data (re-creatable via npm run ingest && npm run index)
+data/processed/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+/tmp/
