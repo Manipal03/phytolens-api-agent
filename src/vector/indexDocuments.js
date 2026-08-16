@@ -23,6 +23,17 @@ async function main() {
     `Loaded ${chunks.length} chunks.`
   );
 
+  // Drop any existing collection so stale points from a previous, smaller
+  // chunk set are not left behind (ids are 1..N, so a shrinking set would
+  // otherwise orphan the tail).
+  const existing = await qdrant.getCollections();
+  if (existing.collections.some((c) => c.name === COLLECTION_NAME)) {
+    await qdrant.deleteCollection(COLLECTION_NAME);
+    console.log(
+      `Dropped existing collection "${COLLECTION_NAME}" for a clean re-index.`
+    );
+  }
+
   await createCollection();
 
   console.log(

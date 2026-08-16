@@ -1,0 +1,111 @@
+{
+  "users": [
+    {
+      "id": "user-1",
+      "name": "Manipal Sabhavat",
+      "farms": [
+        {
+          "id": "farm-1",
+          "name": "my farm 1 tomato",
+          "crop": "tomato",
+          "area_acres": 8.4,
+          "lat": 18.090829,
+          "lon": 79.465273,
+          "geojson": {
+            "type": "Feature",
+            "geometry": {
+              "type": "Polygon",
+              "coordinates": [
+                [
+                  [79.465273, 18.090829],
+                  [79.465868, 18.090835],
+                  [79.465782, 18.090121],
+                  [79.465273, 18.090829]
+                ]
+              ]
+            },
+            "properties": {}
+          }
+        },
+        {
+          "id": "farm-2",
+          "name": "my farm 2 chilli",
+          "crop": "tomato",
+          "area_acres": 5.2,
+          "lat": 17.385044,
+          "lon": 78.486671,
+          "geojson": {
+            "type": "Feature",
+            "geometry": {
+              "type": "Polygon",
+              "coordinates": [
+                [
+                  [78.486171, 17.385544],
+                  [78.487171, 17.385544],
+                  [78.487171, 17.384544],
+                  [78.486171, 17.384544],
+                  [78.486171, 17.385544]
+                ]
+              ]
+            },
+            "properties": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "user-2",
+      "name": "Priya Reddy",
+      "farms": [
+        {
+          "id": "farm-3",
+          "name": "north plot tomato",
+          "crop": "tomato",
+          "area_acres": 3.1,
+          "lat": 17.9689,
+          "lon": 79.5941,
+          "geojson": {
+            "type": "Feature",
+            "geometry": {
+              "type": "Polygon",
+              "coordinates": [
+                [
+                  [79.5936, 17.9694],
+                  [79.5946, 17.9694],
+                  [79.5946, 17.9684],
+                  [79.5936, 17.9684],
+                  [79.5936, 17.9694]
+                ]
+              ]
+            },
+            "properties": {}
+          }
+        },
+        {
+          "id": "farm-4",
+          "name": "riverside plot",
+          "crop": "tomato",
+          "area_acres": 6.7,
+          "lat": 16.506174,
+          "lon": 80.648015,
+          "geojson": {
+            "type": "Feature",
+            "geometry": {
+              "type": "Polygon",
+              "coordinates": [
+                [
+                  [80.647515, 16.506674],
+                  [80.648515, 16.506674],
+                  [80.648515, 16.505674],
+                  [80.647515, 16.505674],
+                  [80.647515, 16.506674]
+                ]
+              ]
+            },
+            "properties": {}
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { Ollama } from "ollama";
 import { toolSchemas, toolImpl } from "../../tools.js";
+import { compactSatellite } from "./farmContext.js";
 
 const ollama = new Ollama({ host: process.env.OLLAMA_HOST || "http://localhost:11434" });
 const MODEL = process.env.OLLAMA_MODEL || "qwen3.5:latest";
@@ -13,9 +14,11 @@ async function chatWithModel(messages) {
   try {
     return await ollama.chat({ model: activeModel, messages, tools: toolSchemas });
   } catch (err) {
-    const isMemoryIssue = /memory/i.test(String(err?.message || err));
-    if (isMemoryIssue && activeModel !== FALLBACK_MODEL) {
-      console.warn(`[ragAgent] ${activeModel} couldn't load (${err.message}). Falling back to ${FALLBACK_MODEL}.`);
+    const message = String(err?.message || err);
+    // Retry with the fallback when the model can't load (memory) or can't do tool calling.
+    const canRetry = /memory/i.test(message) || /does not support tools/i.test(message);
+    if (canRetry && activeModel !== FALLBACK_MODEL) {
+      console.warn(`[ragAgent] ${activeModel} can't be used (${err.message}). Falling back to ${FALLBACK_MODEL}.`);
       activeModel = FALLBACK_MODEL;
       return ollama.chat({ model: activeModel, messages, tools: toolSchemas });
     }
@@ -41,8 +44,20 @@ export const DEMO_FARM = {
   lon: 79.465273,
 };
 
-export function buildSystemPrompt(farm = DEMO_FARM) {
-  return `You are PhytoLens AI's farm advisory assistant. This farmer's field is located at lat ${farm.lat}, lon ${farm.lon}. Use the available tools to fetch live weather, soil, and satellite data when a question needs it, and search the tomato knowledge base for cultivation guidance. For questions about farming practices (irrigation, planting, spacing, fertilizer, pests, diseases, soil prep, yields, protected cultivation), search the knowledge base too — even when you also call a live-data tool. Always ground your answer in the tool results and cite the specific values you used. If a tool fails or returns nothing useful, say so instead of guessing.`;
+export function buildSystemPrompt(farm = DEMO_FARM, liveContext = null) {
+  const farmLine = [
+    farm.name && `Farm: ${farm.name}`,
+    farm.crop && `crop: ${farm.crop}`,
+    farm.area_acres != null && `${farm.area_acres} acres`,
+  ].filter(Boolean).join(" · ");
+
+  const contextBlock = liveContext
+    ? `\n\n${liveContext}\n\nUse the pre-fetched conditions above as the farm's current state. Fetch fresh data only when the user asks about a different time, a forecast, or something not covered above.`
+    : "";
+
+  return `You are PhytoLens AI's farm advisory assistant for ${farmLine}, located at lat ${farm.lat}, lon ${farm.lon}.${contextBlock}
+
+Use the available tools to fetch live weather, soil, and satellite data when a question needs it, and search the tomato knowledge base for cultivation guidance. For questions about farming practices (irrigation, planting, spacing, fertilizer, pests, diseases, soil prep, yields, protected cultivation), search the knowledge base too — even when you also call a live-data tool. Always ground your answer in the tool results and cite the specific values you used. If a tool fails or returns nothing useful, say so instead of guessing.`;
 }
 
 function normalizeGeojson(value, farm) {
@@ -82,9 +97,15 @@ function fillDefaults(name, args, farm) {
  *  - toolCalls: [{ name, args, ok, result }] — every tool invocation with a truncated result
  *  - sources:   [{ score, source, page, document_type, text }] — chunks pulled from the knowledge base
  */
-export async function askAgent(userMessage, { maxSteps = 5, farm = DEMO_FARM } = {}) {
+export async function askAgent(
+  userMessage,
+  { maxSteps = 5, farm = DEMO_FARM, liveContext = null, history = [] } = {}
+) {
   const messages = [
-    { role: "system", content: buildSystemPrompt(farm) },
+    { role: "system", content: buildSystemPrompt(farm, liveContext) },
+    ...history
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .map(({ role, content }) => ({ role, content })),
     { role: "user", content: userMessage },
   ];
 
@@ -145,45 +166,6 @@ function truncateText(text, maxChars) {
 function truncateResult(result, maxChars = 2000) {
   const text = typeof result === "string" ? result : JSON.stringify(result);
   return truncateText(text, maxChars);
-}
-
-/**
- * The satellite API returns ~20k chars of per-date index series (sentinel2,
- * sentinel1, modis, landsat, smap, chirps, nasaPower). That floods a small
- * model's context, so we compact each source to its observation count, date
- * range, and per-index averages — still real numbers the model can cite.
- */
-export function compactSatellite(result) {
-  if (!result || typeof result !== "object") return result;
-
-  const out = {};
-  for (const [source, records] of Object.entries(result)) {
-    if (!Array.isArray(records) || records.length === 0) {
-      out[source] = records;
-      continue;
-    }
-
-    const dates = records.map((r) => r?.date).filter(Boolean);
-    const numeric = {};
-    for (const rec of records) {
-      for (const [key, value] of Object.entries(rec)) {
-        if (key === "date" || typeof value !== "number") continue;
-        (numeric[key] ||= []).push(value);
-      }
-    }
-
-    const averages = {};
-    for (const [key, values] of Object.entries(numeric)) {
-      averages[key] = +(values.reduce((a, b) => a + b, 0) / values.length).toFixed(3);
-    }
-
-    out[source] = {
-      observations: records.length,
-      date_range: dates.length > 0 ? [dates[0], dates[dates.length - 1]] : null,
-      averages,
-    };
-  }
-  return out;
 }
 
 function compactForModel(name, result) {

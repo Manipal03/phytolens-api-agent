@@ -34,7 +34,13 @@ function cleanText(text) {
 }
 
 function getDocumentType(fileName) {
-  if (fileName.toLowerCase().includes("protected")) {
+  const name = fileName.toLowerCase();
+
+  if (name.includes("disease")) {
+    return "disease_guide";
+  }
+
+  if (name.includes("protected")) {
     return "research_paper";
   }
 

@@ -3,27 +3,18 @@ GET https://api.open-meteo.com/v1/forecast?latitude=18.090829&longitude=79.46527
 
 ###
 
-### Soil (OpenLandMap) — original doc's endpoint, confirmed broken (404)
-GET https://api.openlandmap.org/query/soil/taxousda?lon=79.465273&lat=18.090829
+### Soil (ISRIC SoilGrids v2.0) — current source, no key. Returns sand/silt/clay %, pH, SOC per depth.
+GET https://rest.isric.org/soilgrids/v2.0/properties/query?lon=79.465273&lat=18.090829&property=sand&property=clay&property=silt&property=phh2o&property=soc&depth=0-5cm
 
 ###
 
-### Soil (OpenLandMap) — corrected endpoint, old exact filename (400 - file not found)
-GET https://api.openlandmap.org/query/point?lat=18.090829&lon=79.465273&coll=predicted250m&regex=sol_grtgroup_usda.soiltax_c_250m_b0..0cm_1950..2017_v0.1.tif
-
-###
-
-### Soil (OpenLandMap) — broadened regex attempt (test this one)
+### Soil (OpenLandMap) — DEPRECATED: their /query/point API dropped the USDA great-group layer entirely.
+### Every coll/regex combo now returns {"error":"The corresponding files could not be found..."}.
 GET https://api.openlandmap.org/query/point?lat=18.090829&lon=79.465273&coll=predicted250m&regex=grtgroup
 
 ###
 
-### Soil (OpenLandMap) — Swagger docs, check for current valid coll/regex values
-GET https://api.openlandmap.org/docs
-
-###
-
-### Satellite analysis (PhytoLens remote-sensing backend) — confirmed working
+### Satellite fallback #1: PhytoLens remote-sensing backend (key optional; the live service currently needs none)
 POST https://remotesensing-backend-952153121532.us-central1.run.app/analyze-all
 Content-Type: application/json
 
@@ -44,6 +35,12 @@ Content-Type: application/json
   "startDate": "2026-01-01",
   "endDate": "2026-07-25"
 }
+
+###
+
+### Satellite fallback #2 (open data, no key): NASA MODIS MOD13Q1 NDVI via ORNL DAAC.
+### DOY dates (A2021001); kmAboveBelow/kmLeftRight=0 → single pixel at the point.
+GET https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset?latitude=18.090829&longitude=79.465273&startDate=A2026201&endDate=A2026228&band=250m_16_days_NDVI&kmAboveBelow=0&kmLeftRight=0
 
 ###
 
