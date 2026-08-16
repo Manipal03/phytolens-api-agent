@@ -22,7 +22,7 @@ EXAMPLES = [
     "What soil type does the farm have, and what does the guide say about ideal soil for tomatoes?",
     "Give me a full farm status report: current weather, soil type, satellite vegetation health, and the guide's advice on irrigation.",
     "Should I irrigate my tomatoes today? Consider the current weather, recent satellite vegetation health, and the guide's irrigation advice.",
-    "What tomato diseases should I watch for right now given this farm's current conditions, and what are their symptoms and treatments?",
+    "Using the tomato disease guide, what are the symptoms and control measures for early blight and late blight, and how do they spread?",
 ]
 
 
