@@ -4,13 +4,16 @@ import { getFarm, getDefaultFarm, getUsers } from "./src/farms/farmStore.js";
 import { fetchFarmContext, formatFarmContext } from "./src/rag/farmContext.js";
 
 const args = process.argv.slice(2);
-let query = args.filter((a) => !a.startsWith("--")).join(" ");
 let userId = process.env.PHYTOLENS_USER_ID;
 let farmId = process.env.PHYTOLENS_FARM_ID;
+const queryWords = [];
 for (let i = 0; i < args.length; i++) {
-  if (args[i] === "--user") userId = args[i + 1];
-  if (args[i] === "--farm") farmId = args[i + 1];
+  // Consume the flag's value too, so "--user user-1" doesn't leak into the question.
+  if (args[i] === "--user") userId = args[++i];
+  else if (args[i] === "--farm") farmId = args[++i];
+  else if (!args[i].startsWith("--")) queryWords.push(args[i]);
 }
+let query = queryWords.join(" ");
 query = query || "What's the current weather and soil type at this farm?";
 
 if (!userId) {

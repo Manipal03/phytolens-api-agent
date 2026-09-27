@@ -2,9 +2,19 @@ import { retrieve } from "./src/retrieval/retriever.js";
 
 const RS_BASE = process.env.REMOTE_SENSING_BASE_URL;
 
+/** fetch() that gives up after `ms` so a slow API can't stall the whole conversation. */
+async function fetchWithTimeout(url, options = {}, ms = 30000) {
+  try {
+    return await fetch(url, { ...options, signal: AbortSignal.timeout(ms) });
+  } catch (err) {
+    if (err.name === "TimeoutError") throw new Error(`Request timed out after ${ms / 1000}s: ${new URL(url).host}`);
+    throw err;
+  }
+}
+
 export async function getWeather({ lat, lon }) {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover,surface_pressure,precipitation,shortwave_radiation,soil_temperature_0cm,soil_moisture_0_to_1cm`;
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url, {}, 15000);
   if (!res.ok) throw new Error(`Weather API error: ${res.status}`);
   return res.json();
 }
@@ -15,19 +25,15 @@ const SOILGRIDS_PROPERTIES = ["sand", "clay", "silt", "phh2o", "soc"];
 async function fetchWithRetry(url, attempts = 3) {
   let lastErr;
   for (let i = 0; i < attempts; i++) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 45000);
     let retryable = false;
     try {
-      const res = await fetch(url, { signal: controller.signal });
+      const res = await fetchWithTimeout(url, {}, 45000);
       if (res.ok) return res;
       lastErr = new Error(`Soil API error: ${res.status}`);
       retryable = res.status === 429 || res.status === 502 || res.status === 503;
     } catch (err) {
-      lastErr = err.name === "AbortError" ? new Error("Soil API timed out") : err;
+      lastErr = err;
       retryable = true; // network blips and timeouts are worth retrying
-    } finally {
-      clearTimeout(timer);
     }
     if (!retryable || i === attempts - 1) throw lastErr;
     await new Promise((resolve) => setTimeout(resolve, 1500 * (i + 1)));
@@ -145,7 +151,7 @@ async function fetchMODISNdvi(lat, lon, startDate, endDate) {
   const url =
     `${MODIS_NDVI_BASE}/MOD13Q1/subset?latitude=${lat}&longitude=${lon}` +
     `&startDate=${start}&endDate=${end}&band=250m_16_days_NDVI&kmAboveBelow=0&kmLeftRight=0`;
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error(`MODIS NDVI API error: ${res.status}`);
   const data = await res.json();
   const scale = parseFloat(data.scale || "0.0001") || 0.0001;
@@ -178,24 +184,26 @@ export async function getSatelliteAnalysis({ geojson, startDate, endDate }) {
   const key = process.env.REMOTE_SENSING_API_KEY;
   const hasKey = key && key !== "your-key-here";
 
+  // Returns null on any failure (HTTP error, network error, timeout) so the next fallback runs.
+  async function tryBackend(headers) {
+    try {
+      const res = await fetchWithTimeout(`${RS_BASE}/analyze-all`, { method: "POST", headers, body }, 60000);
+      return res.ok ? await res.json() : null;
+    } catch {
+      return null;
+    }
+  }
+
   // 1) PhytoLens remote-sensing backend, with the API key if one is configured.
   if (RS_BASE && hasKey) {
-    const res = await fetch(`${RS_BASE}/analyze-all`, {
-      method: "POST",
-      headers: { ...baseHeaders, Authorization: `Bearer ${key}` },
-      body,
-    });
-    if (res.ok) return res.json();
+    const data = await tryBackend({ ...baseHeaders, Authorization: `Bearer ${key}` });
+    if (data) return data;
   }
 
   // 2) Retry the same backend without a key (the live service currently needs none).
   if (RS_BASE) {
-    const res = await fetch(`${RS_BASE}/analyze-all`, {
-      method: "POST",
-      headers: baseHeaders,
-      body,
-    });
-    if (res.ok) return res.json();
+    const data = await tryBackend(baseHeaders);
+    if (data) return data;
   }
 
   // 3) Open fallback: NASA MODIS NDVI at the farm centroid (keyless, always available).

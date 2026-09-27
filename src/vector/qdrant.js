@@ -1,7 +1,8 @@
+import "dotenv/config";
 import { QdrantClient } from "@qdrant/js-client-rest";
 
 const qdrant = new QdrantClient({
-  url: "http://localhost:6333"
+  url: process.env.QDRANT_URL || "http://localhost:6333"
 });
 
 export const COLLECTION_NAME = "tomato_knowledge";

@@ -1,6 +1,8 @@
-import ollama from "ollama";
+import "dotenv/config";
+import { Ollama } from "ollama";
 
-const EMBEDDING_MODEL = "nomic-embed-text:latest";
+const ollama = new Ollama({ host: process.env.OLLAMA_HOST || "http://localhost:11434" });
+const EMBEDDING_MODEL = process.env.OLLAMA_EMBEDDING_MODEL || "nomic-embed-text:latest";
 
 export async function generateEmbedding(text) {
   if (!text || !text.trim()) {

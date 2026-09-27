@@ -74,7 +74,7 @@ Qdrant                                       │
               search_knowledge_base
                         │
                         ▼
-               src/rag/retriever.js
+          src/retrieval/retriever.js
                         │
                         ▼
                   Qdrant Search
