@@ -19,14 +19,19 @@ export function getUsers() {
   return loadStore().users.map((u) => ({ id: u.id, name: u.name }));
 }
 
+/** Farms saved without a boundary (e.g. from the Streamlit form) get one derived from lat/lon. */
+function withGeojson(farm) {
+  return farm.geojson ? farm : { ...farm, geojson: geojsonFromPoint(+farm.lat, +farm.lon) };
+}
+
 export function getFarms(userId) {
   const user = loadStore().users.find((u) => u.id === userId);
-  return user ? user.farms : [];
+  return user ? user.farms.map(withGeojson) : [];
 }
 
 export function getFarm(userId, farmId) {
-  const user = loadStore().users.find((u) => u.id === userId);
-  return user?.farms.find((f) => f.id === farmId) || null;
+  const farm = getFarms(userId).find((f) => f.id === farmId);
+  return farm || null;
 }
 
 export function getDefaultFarm(userId) {

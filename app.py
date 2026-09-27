@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import time
 import urllib.request
 
 import streamlit as st
@@ -165,7 +166,8 @@ with st.sidebar:
             submitted = st.form_submit_button("Save farm")
             if submitted:
                 new_farm = {
-                    "id": f"farm-{len(farms) + 1}",
+                    # Timestamp-based id so it can't collide with an existing farm's id.
+                    "id": f"farm-{int(time.time() * 1000):x}",
                     "name": r_name or f"Farm {len(farms) + 1}",
                     "crop": r_crop or "tomato",
                     "area_acres": r_area,
